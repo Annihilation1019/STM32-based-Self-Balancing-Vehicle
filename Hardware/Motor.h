@@ -3,8 +3,8 @@
 
 #include "stm32f1xx_hal.h"
 
-#define PWM_MAX 3600
-#define PWM_MIN -3600
+#define PWM_MAX 7200
+#define PWM_MIN -7200
 #define AIN1_SET() HAL_GPIO_WritePin(AIN1_GPIO_Port, AIN1_Pin, GPIO_PIN_SET)
 #define AIN1_RESET() HAL_GPIO_WritePin(AIN1_GPIO_Port, AIN1_Pin, GPIO_PIN_RESET)
 #define AIN2_SET() HAL_GPIO_WritePin(AIN2_GPIO_Port, AIN2_Pin, GPIO_PIN_SET)

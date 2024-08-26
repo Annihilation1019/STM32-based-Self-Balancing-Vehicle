@@ -2,9 +2,10 @@
 #define __PID_H
 
 #include "stm32f1xx_hal.h"
+#include "flash.h"
 
 #define TURN_MAX 150
-#define SPEED_MAX 20
+#define SPEED_MAX 30
 
 extern float Pitch, Roll, Yaw; // 姿态角
 extern volatile float Vertical_Kp;      // 直立环P参数 0 ~ 1000
@@ -14,6 +15,8 @@ extern volatile float Velocity_Ki;      // 速度环I参数 根据工程经验 K
 extern volatile float Turn_Kp;          // 转向环P参数
 extern volatile float Turn_Kd;          // 转向环D参数
 extern volatile float Med_Angle;        // 直立环机械中值角度
+
+extern float PID_Param_buf[]; // PID参数缓存
 
 void PID_Control(void);
 

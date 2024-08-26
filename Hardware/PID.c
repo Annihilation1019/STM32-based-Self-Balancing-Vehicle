@@ -11,20 +11,20 @@
 volatile float Vertical_Kp = 200.0f; // 直立环P参数 0 ~ 1000
 volatile float Vertical_Kd = 0.0f;   // 直立环D参数 -10 ~ 0
 volatile float Velocity_Kp = 0.0f;   // 速度环P参数 0 ~ 1
-volatile float Velocity_Ki = 0.0f;   // 速度环I参数 根据工程经验 Kp/200
+volatile float Velocity_Ki = 0.0f;   // 速度环I参数 根据工程经验 Kp / 200
 volatile float Turn_Kp = 0.0f;       // 转向环P参数
 volatile float Turn_Kd = 0.0f;       // 转向环D参数
 
 extern volatile uint8_t STOP_Flag; // 立即停止标志位
 
-float Pitch, Roll, Yaw;       // 姿态角
-short Gyro_X, Gyro_Y, Gyro_Z; // 陀螺仪数据（角速度）
-short aacx, aacy, aacz;       // 加速度计数据
-volatile float Med_Angle = -2.0f;      // 直立环机械中值角度
+float Pitch, Roll, Yaw;          // 姿态角
+short Gyro_X, Gyro_Y, Gyro_Z;    // 陀螺仪数据（角速度）
+short aacx, aacy, aacz;          // 加速度计数据
+volatile float Med_Angle = 0.0f; // 直立环机械中值角度
 
-int Vertical_Out, Velocity_Out, Turn_Out; // 直立环、速度环、转向环输出
-volatile int Speed_Target = 0, Turn_Target = 0;    // 速度环目标速度、转向环目标角度
-int MotorA_PWM, MotorB_PWM;               // 电机A、B的PWM输出
+int Vertical_Out, Velocity_Out, Turn_Out;       // 直立环、速度环、转向环输出
+volatile int Speed_Target = 0, Turn_Target = 0; // 速度环目标速度、转向环目标角度
+int MotorA_PWM, MotorB_PWM;                     // 电机A、B的PWM输出
 
 /**
  * @brief 直立环PD控制器
@@ -68,14 +68,13 @@ int Velocity_PI(int speed_target, int speed_A, int speed_B)
     {
         Encoder_In = 0;
     }
-
     /* 立即停止信号 */
-    if (STOP_Flag == 1)
+    if (STOP_Flag)
     {
-        Encoder_In = 0;
-        Speed_Target = 0;
-        Turn_Target = 0;
-        Turn_Kd = 0.6f; // 转向约束开启
+        Encoder_In = 0;                                               // 速度环积分清零
+        Turn_Target = 0;                                              // 转向环目标角度清零
+        Speed_Target = 0;                                             // 速度环目标速度清零
+        PID_Param_buf[5] = *(float *)(FLASH_USER_START_ADDR + 5 * 4); // 转向约束开启
         STOP_Flag = 0;
     }
     /* 速度环计算 */
@@ -95,7 +94,7 @@ int Turn_PD(float angle_target, float gyro_Z)
 
 /**
  * @brief PID核心控制
- * @note 速度环 -> 直立环 -> 转向环
+ * @note 速度环 -> 直立环   转向环
  */
 void PID_Control(void)
 {
@@ -109,30 +108,31 @@ void PID_Control(void)
     /* 蓝牙遥控 */
     if (Car_State == ControlMode)
     {
-        if (UP_Flag == 1)
+        if (UP_Flag)
         {
             Speed_Target += 5;
             UP_Flag = 0;
         }
-        if (DOWN_Flag == 1)
+        if (DOWN_Flag)
         {
             Speed_Target -= 5;
             DOWN_Flag = 0;
         }
-        if (LEFT_Flag == 1)
+        if (LEFT_Flag)
         {
             Turn_Target -= 30;
-            Turn_Kd = 0; // 转向约束关闭
+            PID_Param_buf[5] = 0.0f; // 转向约束关闭
             LEFT_Flag = 0;
         }
-        if (RIGHT_Flag == 1)
+        if (RIGHT_Flag)
         {
             Turn_Target += 30;
-            Turn_Kd = 0;
+            PID_Param_buf[5] = 0.0f; // 转向约束关闭
             RIGHT_Flag = 0;
         }
+
         /* 防撞 */
-        if (distance < 10)
+        if (distance < 20)
         {
             STOP_Flag = 1;
         }

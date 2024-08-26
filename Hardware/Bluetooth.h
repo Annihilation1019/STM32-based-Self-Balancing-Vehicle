@@ -5,11 +5,11 @@
 
 enum CarState
 {
-    ControlMode = 'A',
+    ControlMode = 'a',
     SetParam,
     Switch_Resolution,
     Save,
-    UP = 'G',
+    UP = 'g',
     DOWN,
     LEFT,
     RIGHT,

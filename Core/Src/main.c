@@ -283,7 +283,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     else if (HC_SR04_ECHO_isLOW()) // 下降沿中断
     {
       HAL_TIM_Base_Stop(&htim3);
-      HC_SR04_Filter(); // HC-SR04测距滤波
+      distance = (float)__HAL_TIM_GetCounter(&htim3) / 1e6 * 340 * 100 / 2;
     }
   }
   if (GPIO_Pin == MPU6050_INT_Pin)

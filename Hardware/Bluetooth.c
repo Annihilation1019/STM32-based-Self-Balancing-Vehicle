@@ -4,7 +4,6 @@
 #include "stdio.h"
 
 uint8_t rx_buf[2];    // 串口接收缓存
-uint8_t rx_index = 0; // 串口接收索引
 
 volatile uint8_t Car_State = 0;                                                            // 小车状态
 volatile uint8_t UP_Flag = 0, DOWN_Flag = 0, LEFT_Flag = 0, RIGHT_Flag = 0, STOP_Flag = 0; // 方向控制/调参标志位
@@ -16,7 +15,7 @@ volatile uint8_t Save_Flag = 0;                                                 
  */
 void Bluetooth_Init(void)
 {
-    HAL_UART_Receive_IT(&huart3, &rx_buf[rx_index], 1);
+    HAL_UART_Receive_IT(&huart3, rx_buf, 1);
 }
 
 /**
@@ -27,6 +26,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART3)
     {
+        HAL_UART_Transmit(&huart3, rx_buf, 1, 0xffff); // 回显
         switch (rx_buf[0])
         {
         case ControlMode: // 控制模式
@@ -56,7 +56,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
             STOP_Flag = 1;
             break;
         default:
-            HAL_UART_Transmit(&huart3, "Error", sizeof("Error"), 0xffff);
             break;
         }
 

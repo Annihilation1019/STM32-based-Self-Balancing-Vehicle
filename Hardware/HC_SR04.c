@@ -1,6 +1,6 @@
 #include "HC_SR04.h"
 
-volatile float distance;                               // 距离
+volatile float distance;                      // 距离
 float distance_buffer[MEASUREMENTS] = {0.0f}; // 距离滤波缓存
 uint8_t dis_index = 0;                        // 距离滤波索引
 __IO uint32_t sys_tick = 0;                   // 系统滴答
@@ -56,37 +56,38 @@ void HC_SR04_GetDistance(void)
     HC_SR04_TRIG_LOW();
 }
 
-/**
- * @brief HC-SR04测距滤波函数
- * @note 取连续3次测距的平均值，丢弃误差较大的值
- */
-void HC_SR04_Filter(void)
-{
-    static float distance_sum = 0.0f;
-    static uint8_t flag = 0;
-    if (dis_index == MEASUREMENTS) // 3次测距完成
-    {
-        distance = distance_sum / MEASUREMENTS;
-        dis_index = 0;
-        distance_sum = 0.0f;
-        flag = 1;
-    }
-    else
-    {
-        distance_buffer[dis_index] = (float)__HAL_TIM_GetCounter(&htim3) * 0.017;
-        if (dis_index > 0 && abs_float(distance_buffer[dis_index] - distance_buffer[dis_index - 1]) > ERR_MAX) // 丢弃误差较大的值
-        {
-            distance_buffer[dis_index] = distance_buffer[dis_index - 1]; // 使用上一次的值
-        }
-        else if (dis_index == 0 && abs_float(distance_buffer[0] - distance_buffer[MEASUREMENTS - 1]) > ERR_MAX && flag == 1) // 丢弃误差较大的值
-        {
-            distance_buffer[0] = distance_buffer[MEASUREMENTS - 1]; // 使用上一次的值
-        }
+/* 不好用，动态响应差，静态响应一般 */
+// /**
+//  * @brief HC-SR04测距滤波函数
+//  * @note 取连续3次测距的平均值，丢弃误差较大的值
+//  */
+// void HC_SR04_Filter(void)
+// {
+//     static float distance_sum = 0.0f;
+//     static uint8_t flag = 0;
+//     if (dis_index == MEASUREMENTS) // 3次测距完成
+//     {
+//         distance = distance_sum / MEASUREMENTS;
+//         dis_index = 0;
+//         distance_sum = 0.0f;
+//         flag = 1;
+//     }
+//     else
+//     {
+//         distance_buffer[dis_index] = (float)__HAL_TIM_GetCounter(&htim3) * 0.017;
+//         if (dis_index > 0 && abs_float(distance_buffer[dis_index] - distance_buffer[dis_index - 1]) > ERR_MAX) // 丢弃误差较大的值
+//         {
+//             distance_buffer[dis_index] = distance_buffer[dis_index - 1]; // 使用上一次的值
+//         }
+//         else if (dis_index == 0 && abs_float(distance_buffer[0] - distance_buffer[MEASUREMENTS - 1]) > ERR_MAX && flag == 1) // 丢弃误差较大的值
+//         {
+//             distance_buffer[0] = distance_buffer[MEASUREMENTS - 1]; // 使用上一次的值
+//         }
 
-        distance_sum += distance_buffer[dis_index];
-        dis_index++;
-    }
-}
+//         distance_sum += distance_buffer[dis_index];
+//         dis_index++;
+//     }
+// }
 
 /**
  * @brief HC-SR04中断回调函数
