@@ -109,6 +109,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM4_Init();
   MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   OLED_Init();
   MPU_Init();     // 初始化MPU6050
@@ -288,7 +289,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   if (GPIO_Pin == MPU6050_INT_Pin)
   {
-    PID_Control();         // PID主控制器
+    PID_Control(); // PID主控制器
     HC_SR04_GetDistance(); // 获取HC-SR04距离
   }
 }

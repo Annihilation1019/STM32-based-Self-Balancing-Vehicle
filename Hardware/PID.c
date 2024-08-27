@@ -7,6 +7,8 @@
 #include "Motor.h"
 #include "Bluetooth.h"
 #include "HC_SR04.h"
+#include "usart.h"
+#include <stdio.h>
 
 volatile float Vertical_Kp = 200.0f; // 直立环P参数 0 ~ 1000
 volatile float Vertical_Kd = 0.0f;   // 直立环D参数 -10 ~ 0
@@ -159,4 +161,13 @@ void PID_Control(void)
     Motor_Limit(&MotorA_PWM, &MotorB_PWM);
     /* 电机控制 */
     Motor_Control(MotorA_PWM, MotorB_PWM);
+    printf("%d,%d,%d,%d\n", Vertical_Out, Velocity_Out, Turn_Out, Speed_Target);
+}
+// 重定义fputc函数
+int fputc(int ch, FILE *f)
+{
+    while ((USART1->SR & 0X40) == 0)
+        ; // 循环发送,直到发送完毕
+    USART1->DR = (uint8_t)ch;
+    return ch;
 }
