@@ -3,10 +3,11 @@
 #include "PID.h"
 #include "stdio.h"
 
-uint8_t rx_buf[2];    // 串口接收缓存
+uint8_t rx_buf[2]; // 串口接收缓存
 
-volatile uint8_t Car_State = 0;                                                            // 小车状态
-volatile uint8_t UP_Flag = 0, DOWN_Flag = 0, LEFT_Flag = 0, RIGHT_Flag = 0, STOP_Flag = 0; // 方向控制/调参标志位
+volatile uint8_t Car_State = ControlMode;                                                  // 小车状态，上电默认为遥控模式
+volatile uint8_t UP_Flag = 0, DOWN_Flag = 0, LEFT_Flag = 0, RIGHT_Flag = 0; // 方向控制/调参标志位
+volatile int8_t STOP_Flag = 0;                                                             // 立即停止标志位
 volatile uint8_t Switch_Resolution_Flag = 0;                                               // 分辨率切换标志位
 volatile uint8_t Save_Flag = 0;                                                            // 保存参数标志位
 

@@ -10,14 +10,16 @@
 #include "usart.h"
 #include <stdio.h>
 
-volatile float Vertical_Kp = 200.0f; // 直立环P参数 0 ~ 1000
-volatile float Vertical_Kd = 0.0f;   // 直立环D参数 -10 ~ 0
-volatile float Velocity_Kp = 0.0f;   // 速度环P参数 0 ~ 1
-volatile float Velocity_Ki = 0.0f;   // 速度环I参数 根据工程经验 Kp / 200
-volatile float Turn_Kp = 0.0f;       // 转向环P参数
-volatile float Turn_Kd = 0.0f;       // 转向环D参数
+volatile float Vertical_angle_Kp; // 直立环P参数 0 ~ 1000
+volatile float Vertical_angle_Kd; // 直立环D参数 -10 ~ 0
+volatile float Vertical_gyro_Kp;  // 直立环角速度P参数 0 ~ 1
+volatile float Vertical_gyro_Kd;  // 直立环角速度D参数 -5 ~ 0
+volatile float Velocity_Kp;       // 速度环P参数 0 ~ 1
+volatile float Velocity_Ki;       // 速度环I参数 根据工程经验 Kp / 200
+volatile float Turn_Kp;           // 转向环P参数
+volatile float Turn_Kd;           // 转向环D参数 -1 ~ 0
 
-extern volatile uint8_t STOP_Flag; // 立即停止标志位
+extern volatile int8_t STOP_Flag; // 立即停止标志位
 
 float Pitch, Roll, Yaw;          // 姿态角
 short Gyro_X, Gyro_Y, Gyro_Z;    // 陀螺仪数据（角速度）
@@ -29,17 +31,27 @@ volatile int Speed_Target = 0, Turn_Target = 0; // 速度环目标速度、转�
 int MotorA_PWM, MotorB_PWM;                     // 电机A、B的PWM输出
 
 /**
- * @brief 直立环PD控制器
+ * @brief 直立环二阶PD控制器
  * @param angle_target 目标角度
  * @param angle 实际角度
- * @param gyro_Y 角速度
+ * @param gyro_Y 实际角速度
+ * @param accy 实际角加速度
  * @retval 电机PWM输出
  */
 int Vertical_PD(float angle_target, float angle, float gyro_Y)
 {
-    float err; // 角度误差
-    err = angle_target - angle;
-    return Vertical_Kp * err + Vertical_Kd * gyro_Y;
+    /* 计算误差 */
+    float err_angle, err_gyro; // 偏差值
+    static float err_gyro_last = 0.0f;
+    err_angle = angle_target - angle;
+    err_gyro = -gyro_Y;
+    /* 计算PD输出 */
+    int angle_output = Vertical_angle_Kp * err_angle + Vertical_angle_Kd * gyro_Y;
+    int gyro_output = Vertical_gyro_Kp * err_gyro + Vertical_gyro_Kd * (err_gyro - err_gyro_last);
+    /* 更新误差 */
+    err_gyro_last = err_gyro;
+    /* 电机PWM输出 */
+    return angle_output + gyro_output;
 }
 
 /**
@@ -73,11 +85,21 @@ int Velocity_PI(int speed_target, int speed_A, int speed_B)
     /* 立即停止信号 */
     if (STOP_Flag)
     {
-        Encoder_In = 0;                                               // 速度环积分清零
-        Turn_Target = 0;                                              // 转向环目标角度清零
-        Speed_Target = 0;                                             // 速度环目标速度清零
-        PID_Param_buf[5] = *(float *)(FLASH_USER_START_ADDR + 5 * 4); // 转向约束开启
-        STOP_Flag = 0;
+        STOP_Flag = Speed_Target; // 缓冲减速，避免过冲
+        Turn_Target = 0;          // 转向环目标角度清零
+        if (STOP_Flag > 0)
+        {
+            Speed_Target--;
+        }
+        else if (STOP_Flag < 0)
+        {
+            Speed_Target++;
+        }
+        else if (STOP_Flag == 0)
+        {
+            PID_Param_buf[7] = *(float *)(FLASH_USER_START_ADDR + 7 * 4); // 转向约束开启
+            Encoder_In = 0;                                               // 速度环积分清零
+        }
     }
     /* 速度环计算 */
     return Velocity_Kp * err_LowOut + Velocity_Ki * Encoder_In;
@@ -123,18 +145,18 @@ void PID_Control(void)
         if (LEFT_Flag)
         {
             Turn_Target -= 30;
-            PID_Param_buf[5] = 0.0f; // 转向约束关闭
+            PID_Param_buf[7] = 0.0f; // 转向约束关闭
             LEFT_Flag = 0;
         }
         if (RIGHT_Flag)
         {
             Turn_Target += 30;
-            PID_Param_buf[5] = 0.0f; // 转向约束关闭
+            PID_Param_buf[7] = 0.0f; // 转向约束关闭
             RIGHT_Flag = 0;
         }
 
         /* 防撞 */
-        if (distance < 20)
+        if (distance < 30)
         {
             STOP_Flag = 1;
         }
@@ -161,7 +183,7 @@ void PID_Control(void)
     Motor_Limit(&MotorA_PWM, &MotorB_PWM);
     /* 电机控制 */
     Motor_Control(MotorA_PWM, MotorB_PWM);
-    printf("%d,%d,%d,%d\n", Vertical_Out, Velocity_Out, Turn_Out, Speed_Target);
+    // printf("%d,%d\n", Gyro_Z, PWM_Out);
 }
 // 重定义fputc函数
 int fputc(int ch, FILE *f)

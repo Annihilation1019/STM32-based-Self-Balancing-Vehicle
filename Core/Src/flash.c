@@ -9,9 +9,9 @@
  */
 void Flash_Write_PID_Params(float *params, uint32_t length)
 {
-    if (length > 7)
+    if (length > 9)
     {
-        // 参数长度超过7，返回错误
+        // 参数长度超过9，返回错误
         return;
     }
     HAL_FLASH_Unlock();
@@ -50,9 +50,9 @@ void Flash_Write_PID_Params(float *params, uint32_t length)
  */
 void Flash_Read_PID_Params(float *params, uint32_t length)
 {
-    if (length > 7)
+    if (length > 9)
     {
-        // 参数长度超过7，返回错误
+        // 参数长度超过9，返回错误
         return;
     }
 

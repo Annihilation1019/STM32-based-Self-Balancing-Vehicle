@@ -45,7 +45,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define PID_buf_length 7
+#define PID_buf_length 9
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,11 +56,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-char display_buffer[30];             // 显示缓存
-uint8_t PID_Flag = 0;                // PID控制触发标志
-float PID_Param_buf[PID_buf_length]; // PID参数缓存
-int8_t PID_buf_index = 0;            // PID参数索引
-float variation = 100.0f;            // PID参数变化量
+char display_buffer[30];                                                                             // 显示缓存
+uint8_t PID_Flag = 0;                                                                                // PID控制触发标志
+float PID_Param_buf[PID_buf_length] = {240.0f, -1.7f, 0.8f, -1.2f, 0.6f, 0.003f, 12.0f, 0.5f, 0.0f}; // PID参数缓存
+int8_t PID_buf_index = 0;                                                                            // PID参数索引
+float variation = 100.0f;                                                                            // PID参数变化量
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -135,43 +135,36 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     /* MPU6050 */
-    sprintf(display_buffer, "Pit:%.2f  ", Pitch);    // 将Pitch转换为字符串
-    OLED_ShowString(1, 1, display_buffer, OLED_8x6); // 显示Pitch
-    sprintf(display_buffer, "Rol:%.2f  ", Roll);     // 将Roll转换为字符串
-    OLED_ShowString(2, 1, display_buffer, OLED_8x6); // 显示Roll
-    sprintf(display_buffer, "Yaw:%.2f  ", Yaw);      // 将Yaw转换为字符串
-    OLED_ShowString(3, 1, display_buffer, OLED_8x6); // 显示Yaw
+    sprintf(display_buffer, "P:%.2f MA:%.2f  ", Pitch, Med_Angle);     // 将Pitch与机械中值转换为字符串
+    OLED_ShowString(1, 1, display_buffer, OLED_8x6);                      // 显示Pitch
+    sprintf(display_buffer, "R:%.2f Index:%d  ", Roll, PID_buf_index); // 将Roll与参数索引转换为字符串
+    OLED_ShowString(2, 1, display_buffer, OLED_8x6);                      // 显示Roll
+    sprintf(display_buffer, "Y:%.2f V:%.3f   ", Yaw, variation);         // 将Yaw与分辨率转换为字符串
+    OLED_ShowString(3, 1, display_buffer, OLED_8x6);                      // 显示Yaw
 
     /* HC-SR04 */
-    // HC_SR04_GetDistance();                             // 获取HC-SR04距离
-    sprintf(display_buffer, "Dis:%.2fcm  ", distance); // 将距离转换为字符串
-    OLED_ShowString(4, 1, display_buffer, OLED_8x6);   // 显示距离
-
-    /* 霍尔编码器 */
-    sprintf(display_buffer, "L:%d R:%d   ", Encoder_Left, Encoder_Right); // 将编码器的值转换为字符串
-    OLED_ShowString(5, 1, display_buffer, OLED_8x6);                      // 显示编码器的值
+    sprintf(display_buffer, "Dis:%.2f L%d R%d    ", distance, Encoder_Left, Encoder_Right); // 将距离与霍尔编码器值转换为字符串
+    OLED_ShowString(4, 1, display_buffer, OLED_8x6);                                       // 显示距离
 
     /* 显示PID参数 */
-    Vertical_Kp = PID_Param_buf[0];
-    Vertical_Kd = PID_Param_buf[1];
-    Velocity_Kp = PID_Param_buf[2];
-    Velocity_Ki = PID_Param_buf[3];
-    Turn_Kp = PID_Param_buf[4];
-    Turn_Kd = PID_Param_buf[5];
-    Med_Angle = PID_Param_buf[6];
+    Vertical_angle_Kp = PID_Param_buf[0];
+    Vertical_angle_Kd = PID_Param_buf[1];
+    Vertical_gyro_Kp = PID_Param_buf[2];
+    Vertical_gyro_Kd = PID_Param_buf[3];
+    Velocity_Kp = PID_Param_buf[4];
+    Velocity_Ki = PID_Param_buf[5];
+    Turn_Kp = PID_Param_buf[6];
+    Turn_Kd = PID_Param_buf[7];
+    Med_Angle = PID_Param_buf[8];
 
-    sprintf(display_buffer, "Kp:%.2f Kd:%.2f  ", Vertical_Kp, Vertical_Kd); // 将PID参数转换为字符串
-    OLED_ShowString(6, 1, display_buffer, OLED_8x6);                        // 显示PID参数
-    sprintf(display_buffer, "Kp:%.2f Kd:%.3f   ", Velocity_Kp, Velocity_Ki);
+    sprintf(display_buffer, "Kp:%.2f Kd:%.2f  ", Vertical_angle_Kp, Vertical_angle_Kd); // 将PID参数转换为字符串
+    OLED_ShowString(5, 1, display_buffer, OLED_8x6);                                    // 显示PID参数
+    sprintf(display_buffer, "Kp:%.2f Kd:%.2f   ", Vertical_gyro_Kp, Vertical_gyro_Kd);
+    OLED_ShowString(6, 1, display_buffer, OLED_8x6);
+    sprintf(display_buffer, "Kp:%.2f Ki:%.3f   ", Velocity_Kp, Velocity_Ki);
     OLED_ShowString(7, 1, display_buffer, OLED_8x6);
     sprintf(display_buffer, "Kp:%.2f Kd:%.2f  ", Turn_Kp, Turn_Kd);
     OLED_ShowString(8, 1, display_buffer, OLED_8x6);
-    sprintf(display_buffer, "MA:%.2f", Med_Angle);
-    OLED_ShowString(1, 14, display_buffer, OLED_8x6);
-    sprintf(display_buffer, "Index:%d", PID_buf_index);
-    OLED_ShowString(2, 14, display_buffer, OLED_8x6);
-    sprintf(display_buffer, "V%.3f", variation);
-    OLED_ShowString(3, 14, display_buffer, OLED_8x6);
 
     /* 为确保PID控制函数中读取传感器数据周期的准确性，将PID_Control();放置在MPU6050_INT引脚触发的外部中断回调函数中，10ms执行一次 */
 
@@ -184,18 +177,14 @@ int main(void)
         PID_buf_index--;
         if (PID_buf_index < 0)
         {
-          PID_buf_index = 6;
+          PID_buf_index = PID_buf_length - 1; // 循环索引
         }
-        sprintf(display_buffer, "%d", PID_buf_index);
-        HAL_UART_Transmit(&huart3, (uint8_t *)display_buffer, 1, 0xffff);
         UP_Flag = 0;
       }
       else if (DOWN_Flag)
       {
         PID_buf_index++;
-        PID_buf_index %= 7; // 循环索引
-        sprintf(display_buffer, "%d", PID_buf_index);
-        HAL_UART_Transmit(&huart3, (uint8_t *)PID_buf_index, 1, 0xffff);
+        PID_buf_index %= PID_buf_length; // 循环索引
         DOWN_Flag = 0;
       }
       else if (LEFT_Flag)
@@ -222,12 +211,12 @@ int main(void)
     if (Save_Flag)
     {
       Flash_Write_PID_Params(PID_Param_buf, PID_buf_length);
-      OLED_ShowString(5, 20, "!", OLED_8x6);
+      OLED_ShowString(6, 20, "!", OLED_8x6);
       Save_Flag = 0;
     }
     else
     {
-      OLED_ShowString(5, 20, " ", OLED_8x6);
+      OLED_ShowString(6, 20, " ", OLED_8x6);
     }
   }
   /* USER CODE END 3 */
@@ -289,7 +278,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   if (GPIO_Pin == MPU6050_INT_Pin)
   {
-    PID_Control(); // PID主控制器
+    PID_Control();         // PID主控制器
     HC_SR04_GetDistance(); // 获取HC-SR04距离
   }
 }
