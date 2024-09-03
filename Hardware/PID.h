@@ -5,7 +5,8 @@
 #include "flash.h"
 
 #define TURN_MAX 150
-#define SPEED_MAX 30 // 5档调速
+#define SPEED_MAX 30 // 6档调速
+#define SPEED_MIN -15
 
 extern float Pitch, Roll, Yaw;           // 姿态角
 extern volatile float Vertical_angle_Kp; // 直立环P参数 0 ~ 1000

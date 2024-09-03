@@ -18,12 +18,12 @@ volatile float Velocity_Kp;       // 速度环P参数 0 ~ 1
 volatile float Velocity_Ki;       // 速度环I参数 根据工程经验 Kp / 200
 volatile float Turn_Kp;           // 转向环P参数
 volatile float Turn_Kd;           // 转向环D参数 -1 ~ 0
+volatile uint8_t Dis_Flag;        // 测距标志位
 
 extern volatile int8_t STOP_Flag; // 立即停止标志位
 
 float Pitch, Roll, Yaw;          // 姿态角
 short Gyro_X, Gyro_Y, Gyro_Z;    // 陀螺仪数据（角速度）
-short aacx, aacy, aacz;          // 加速度计数据
 volatile float Med_Angle = 0.0f; // 直立环机械中值角度
 
 int Vertical_Out, Velocity_Out, Turn_Out;       // 直立环、速度环、转向环输出
@@ -72,7 +72,10 @@ int Velocity_PI(int speed_target, int speed_A, int speed_B)
     err_LowOut = (1 - alpha) * err + alpha * err_LowOut_Last;
     err_LowOut_Last = err_LowOut;
     /* 编码器积分 */
-    Encoder_In += err_LowOut;
+    if (Speed_Target != 0 || Turn_Target != 0 || STOP_Flag == 0)
+    {
+        Encoder_In += err_LowOut;
+    }
     /* 积分限幅 */
     if (Encoder_In > 20000)
         Encoder_In = 20000;
@@ -128,7 +131,6 @@ void PID_Control(void)
     Encoder_Right = -GetEncoderVal(&htim4);       // 右轮方向相反
     mpu_dmp_get_data(&Pitch, &Roll, &Yaw);        // 获取姿态角
     MPU_Get_Gyroscope(&Gyro_X, &Gyro_Y, &Gyro_Z); // 获取陀螺仪数据
-    MPU_Get_Accelerometer(&aacx, &aacy, &aacz);   // 获取加速度计数据
     /* 蓝牙遥控 */
     if (Car_State == ControlMode)
     {
@@ -156,15 +158,20 @@ void PID_Control(void)
         }
 
         /* 防撞 */
-        if (distance < 30)
+        if (distance < 20 && Dis_Flag == 0)
         {
-            STOP_Flag = 1;
+            Dis_Flag = 1;  // 转换进入防撞状态
+            STOP_Flag = 1; // 立即停止
+        }
+        if (Dis_Flag && distance > 30)
+        {
+            Dis_Flag = 0; // 转换退出防撞状态
         }
         /* 限幅 */
         if (Speed_Target > SPEED_MAX)
             Speed_Target = SPEED_MAX;
-        else if (Speed_Target < -SPEED_MAX)
-            Speed_Target = -SPEED_MAX;
+        else if (Speed_Target < SPEED_MIN)
+            Speed_Target = SPEED_MIN;
         if (Turn_Target > TURN_MAX)
             Turn_Target = TURN_MAX;
         else if (Turn_Target < -TURN_MAX)
@@ -183,6 +190,7 @@ void PID_Control(void)
     Motor_Limit(&MotorA_PWM, &MotorB_PWM);
     /* 电机控制 */
     Motor_Control(MotorA_PWM, MotorB_PWM);
+    /* 上位机调试 */
     // printf("%d,%d\n", Gyro_Z, PWM_Out);
 }
 // 重定义fputc函数
